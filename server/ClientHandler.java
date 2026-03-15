@@ -2,24 +2,22 @@ package server;
 
 import java.io.*;
 import java.net.Socket;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 public class ClientHandler implements Runnable {
 
-    private final Socket socket;
-    private final ClientManager clientManager;
-    private final AuthManager authManager;
-    private final MessageRouter messageRouter;
+    private Socket socket;
+    private ClientManager clientManager;
+    private AuthManager authManager;
+    private MessageRouter messageRouter;
 
     private PrintWriter out;
     private BufferedReader in;
-    private String username;
 
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private String username;
 
     public ClientHandler(Socket socket, ClientManager clientManager,
                          AuthManager authManager, MessageRouter messageRouter) {
+
         this.socket = socket;
         this.clientManager = clientManager;
         this.authManager = authManager;
@@ -28,78 +26,138 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        try {
-            out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-            in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            if (!handleLogin()) {
+        try {
+
+            // Setup input/output streams
+            out = new PrintWriter(socket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // Login step
+            boolean loginSuccess = handleLogin();
+
+            if (!loginSuccess) {
                 socket.close();
                 return;
             }
 
-            sendMessage("[Server] Welcome, " + username + "! Type /msg <user> <text> for private messages.");
-            messageRouter.broadcast("[Server] " + username + " has joined the chat.", null);
+            // Welcome message
+            sendMessage("[Server] Welcome " + username);
+
+            // Inform others
+            messageRouter.broadcast("[Server] " + username + " joined the chat", username);
+
+            // Add client to active list
             clientManager.addClient(username, this);
 
+            // Listen for client messages
             String line;
+
             while ((line = in.readLine()) != null) {
-                String decrypted = EncryptionUtil.decrypt(line);
-                processClientInput(decrypted);
+
+                String message = EncryptionUtil.decrypt(line);
+
+                processMessage(message);
             }
 
         } catch (IOException e) {
-            System.out.println("[ClientHandler] Connection lost: " + username);
+
+            System.out.println("Connection lost with " + username);
+
         } finally {
+
             disconnect();
         }
     }
 
+    // --------------------------------------
+    // LOGIN
+    // --------------------------------------
     private boolean handleLogin() throws IOException {
-        // Handshake is plain text — encryption starts after login
+
         out.println("LOGIN");
+
         String user = in.readLine();
         String pass = in.readLine();
 
-        if (user == null || pass == null) return false;
-
-        if (authManager.authenticate(user, pass)) {
-            if (clientManager.isOnline(user)) {
-                out.println("REJECT Already logged in.");
-                return false;
-            }
-            username = user;
-            out.println("OK");
-            return true;
-        } else {
-            out.println("REJECT Invalid credentials.");
+        if (user == null || pass == null) {
             return false;
         }
-    }
 
-    private void processClientInput(String input) {
-        if (input == null || input.isBlank()) return;
+        boolean valid = authManager.authenticate(user, pass);
 
-        String timestamp = "[" + LocalTime.now().format(TIME_FMT) + "]";
-
-        if (input.startsWith("/quit")) {
-            disconnect();
-        } else {
-            messageRouter.routeMessage(username, input);
+        if (!valid) {
+            out.println("REJECT Invalid username or password");
+            return false;
         }
+
+        if (clientManager.isOnline(user)) {
+            out.println("REJECT User already logged in");
+            return false;
+        }
+
+        username = user;
+
+        out.println("OK");
+
+        return true;
     }
 
+    // --------------------------------------
+    // PROCESS CLIENT MESSAGE
+    // --------------------------------------
+    private void processMessage(String message) {
+
+        if (message == null) {
+            return;
+        }
+
+        message = message.trim();
+
+        if (message.length() == 0) {
+            return;
+        }
+
+        // Quit command
+        if (message.equals("/quit")) {
+
+            disconnect();
+            return;
+        }
+
+        // Send message through router
+        messageRouter.routeMessage(username, message);
+    }
+
+    // --------------------------------------
+    // SEND MESSAGE TO CLIENT
+    // --------------------------------------
     public void sendMessage(String message) {
+
         String encrypted = EncryptionUtil.encrypt(message);
+
         out.println(encrypted);
     }
 
+    // --------------------------------------
+    // DISCONNECT
+    // --------------------------------------
     private void disconnect() {
+
         try {
+
             if (username != null) {
+
                 clientManager.removeClient(username);
-                messageRouter.broadcast("[Server] " + username + " has left the chat.", null);
+
+                messageRouter.broadcast("[Server] " + username + " left the chat", username);
             }
+
             socket.close();
-        } catch (IOException ignored) {}
+
+        } catch (IOException e) {
+
+            System.out.println("Error closing connection");
+        }
     }
 }
