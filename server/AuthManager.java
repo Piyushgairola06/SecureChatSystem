@@ -1,86 +1,148 @@
 package server;
 
 import java.io.*;
-import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 public class AuthManager {
 
-    // Path relative to project root — adjust if needed
+    // File where usernames and hashed passwords are stored
     private static final String USERS_FILE = "storage/users.txt";
-    private final ConcurrentHashMap<String, String> credentials = new ConcurrentHashMap<>();
+
+    // Stores username -> hashed password
+    private HashMap<String, String> credentials;
 
     public AuthManager() {
+        credentials = new HashMap<String, String>();
         loadUsers();
     }
 
-    /**
-     * Validates username + plain-text password against stored SHA-256 hash.
-     */
+    // -------------------------------------------------------
+    // Authenticate user
+    // -------------------------------------------------------
     public boolean authenticate(String username, String password) {
-        if (username == null || password == null) return false;
-        String storedHash = credentials.get(username.trim());
-        if (storedHash == null) return false;
-        return storedHash.equals(hash(password.trim()));
+
+        if (username == null || password == null) {
+            return false;
+        }
+
+        String storedHash = credentials.get(username);
+
+        if (storedHash == null) {
+            return false;
+        }
+
+        String enteredHash = hash(password);
+
+        if (storedHash.equals(enteredHash)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    /**
-     * Registers a new user. Returns false if username already exists.
-     * Call this from an admin utility or when first setting up users.txt manually.
-     */
+    // -------------------------------------------------------
+    // Register new user
+    // -------------------------------------------------------
     public boolean register(String username, String password) {
-        if (credentials.containsKey(username)) return false;
-        String hashed = hash(password);
-        credentials.put(username, hashed);
-        persistUser(username, hashed);
+
+        if (credentials.containsKey(username)) {
+            return false; // user already exists
+        }
+
+        String hashedPassword = hash(password);
+
+        credentials.put(username, hashedPassword);
+
+        saveUser(username, hashedPassword);
+
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // Internal helpers
-    // ------------------------------------------------------------------
-
+    // -------------------------------------------------------
+    // Load users from file
+    // -------------------------------------------------------
     private void loadUsers() {
+
         File file = new File(USERS_FILE);
+
         if (!file.exists()) {
-            System.out.println("[AuthManager] users.txt not found — starting empty.");
+            System.out.println("users.txt not found. Starting with empty list.");
             return;
         }
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+
+        try {
+
+            BufferedReader reader = new BufferedReader(new FileReader(file));
             String line;
+
             while ((line = reader.readLine()) != null) {
+
                 line = line.trim();
-                if (line.isEmpty() || line.startsWith("#")) continue;
-                String[] parts = line.split(":", 2);
+
+                if (line.length() == 0) {
+                    continue;
+                }
+
+                String[] parts = line.split(":");
+
                 if (parts.length == 2) {
-                    credentials.put(parts[0].trim(), parts[1].trim());
+                    String username = parts[0];
+                    String passwordHash = parts[1];
+
+                    credentials.put(username, passwordHash);
                 }
             }
-            System.out.println("[AuthManager] Loaded " + credentials.size() + " user(s).");
+
+            reader.close();
+
         } catch (IOException e) {
-            System.err.println("[AuthManager] Error reading users.txt: " + e.getMessage());
+            System.out.println("Error reading users file");
         }
     }
 
-    private void persistUser(String username, String hashedPassword) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(USERS_FILE, true))) {
-            pw.println(username + ":" + hashedPassword);
-        } catch (IOException e) {
-            System.err.println("[AuthManager] Could not write to users.txt: " + e.getMessage());
-        }
-    }
+    // -------------------------------------------------------
+    // Save new user to file
+    // -------------------------------------------------------
+    private void saveUser(String username, String hashedPassword) {
 
-    public static String hash(String input) {
         try {
+
+            PrintWriter writer = new PrintWriter(new FileWriter(USERS_FILE, true));
+
+            writer.println(username + ":" + hashedPassword);
+
+            writer.close();
+
+        } catch (IOException e) {
+            System.out.println("Error saving user");
+        }
+    }
+
+    // -------------------------------------------------------
+    // SHA-256 Hash Function
+    // -------------------------------------------------------
+    public static String hash(String input) {
+
+        try {
+
             MessageDigest md = MessageDigest.getInstance("SHA-256");
+
             byte[] bytes = md.digest(input.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : bytes) sb.append(String.format("%02x", b));
-            return sb.toString();
+
+            String result = "";
+
+            for (int i = 0; i < bytes.length; i++) {
+                result += String.format("%02x", bytes[i]);
+            }
+
+            return result;
+
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+
+            System.out.println("Hash algorithm error");
+            return null;
         }
     }
 }
