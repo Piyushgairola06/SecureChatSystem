@@ -1,24 +1,33 @@
 package server;
 
-import java.io.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class ServerLogger {
 
     private static final String LOG_FILE = "storage/chatlog.txt";
-    private static final DateTimeFormatter DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // Static-only utility — no instantiation needed
-    private ServerLogger() {}
+    // --------------------------------------
+    // Log message
+    // --------------------------------------
+    public static void log(String message) {
 
-    public static synchronized void log(String message) {
-        String entry = "[" + LocalDateTime.now().format(DT_FMT) + "] " + message;
-        System.out.println(entry);   // console
-        try (PrintWriter pw = new PrintWriter(new FileWriter(LOG_FILE, true))) {
-            pw.println(entry);
+        // Print on console
+        System.out.println(message);
+
+        // Save to file
+        try {
+
+            PrintWriter writer = new PrintWriter(new FileWriter(LOG_FILE, true));
+
+            writer.println(message);
+
+            writer.close();
+
         } catch (IOException e) {
-            System.err.println("[ServerLogger] Could not write log: " + e.getMessage());
+
+            System.out.println("Error writing log file");
         }
     }
 }
