@@ -6,24 +6,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientHandler implements Runnable {
 
-    private Socket socket;
+    private static final int MAX_MESSAGE_LENGTH = 500;
+
+    private Socket        socket;
     private ClientManager clientManager;
-    private AuthManager authManager;
+    private AuthManager   authManager;
     private MessageRouter messageRouter;
 
-    private PrintWriter out;
+    private PrintWriter    out;
     private BufferedReader in;
 
     private String username;
 
-    // Guard against double disconnect() calls
     private final AtomicBoolean disconnected = new AtomicBoolean(false);
 
     public ClientHandler(Socket socket, ClientManager clientManager,
                          AuthManager authManager, MessageRouter messageRouter) {
-        this.socket = socket;
+        this.socket        = socket;
         this.clientManager = clientManager;
-        this.authManager = authManager;
+        this.authManager   = authManager;
         this.messageRouter = messageRouter;
     }
 
@@ -38,11 +39,9 @@ public class ClientHandler implements Runnable {
                 return;
             }
 
-            // Register BEFORE broadcasting "joined" so the new user
-            // is already in the map if anyone replies immediately
             clientManager.addClient(username, this);
 
-            sendMessage("[Server] Welcome, " + username + "!");
+            sendMessage("[Server] Welcome, " + username + "! Type /help for commands.");
             messageRouter.broadcast("[Server] " + username + " joined the chat.", username);
 
             String line;
@@ -54,7 +53,6 @@ public class ClientHandler implements Runnable {
         } catch (IOException e) {
             ServerLogger.log("[Server] Connection lost: " + username);
         } finally {
-            // Only disconnect once — guards against /quit path + finally path
             disconnect();
         }
     }
@@ -63,9 +61,9 @@ public class ClientHandler implements Runnable {
     // LOGIN / REGISTER
     // --------------------------------------------------
     private boolean handleLogin() throws IOException {
-        out.println("LOGIN");  // server ready signal (same for both flows)
+        out.println("LOGIN");
 
-        String mode = in.readLine(); // "LOGIN" or "REGISTER"
+        String mode = in.readLine();
         String user = in.readLine();
         String pass = in.readLine();
 
@@ -74,19 +72,33 @@ public class ClientHandler implements Runnable {
         user = user.trim();
         pass = pass.trim();
 
+        // Empty check
         if (user.isEmpty() || pass.isEmpty()) {
             out.println("REJECT Username and password cannot be empty");
             return false;
         }
 
+        // Username format: 3-20 chars, letters/digits/underscore only
+        // Also blocks colon which would break users.txt parsing
+        if (!user.matches("[a-zA-Z0-9_]{3,20}")) {
+            out.println("REJECT Username must be 3-20 characters: letters, digits, underscores only");
+            return false;
+        }
+
+        // Password min length
+        if (pass.length() < 4) {
+            out.println("REJECT Password must be at least 4 characters");
+            return false;
+        }
+
         if ("REGISTER".equals(mode)) {
-            boolean registered = authManager.register(user, pass);
-            if (!registered) {
+            if (!authManager.register(user, pass)) {
                 out.println("REJECT Username already taken");
                 ServerLogger.log("[Auth] Register failed (taken): " + user);
                 return false;
             }
-            ServerLogger.log("[Auth] New user registered: " + user);
+            ServerLogger.log("[Auth] Registered: " + user);
+
         } else {
             if (!authManager.authenticate(user, pass)) {
                 out.println("REJECT Invalid username or password");
@@ -102,7 +114,7 @@ public class ClientHandler implements Runnable {
 
         username = user;
         out.println("OK");
-        ServerLogger.log("[Auth] Login success: " + username);
+        ServerLogger.log("[Auth] Logged in: " + username);
         return true;
     }
 
@@ -111,18 +123,41 @@ public class ClientHandler implements Runnable {
     // --------------------------------------------------
     private void processMessage(String message) {
         if (message == null || message.trim().isEmpty()) return;
-
         message = message.trim();
 
+        // ---- Built-in commands ----
+
         if (message.equalsIgnoreCase("/quit")) {
-            // Let the finally block handle cleanup — don't call disconnect() here
-            // Just close the socket so readLine() returns null and exits the loop cleanly
-            try {
-                socket.close();
-            } catch (IOException ignored) {}
+            try { socket.close(); } catch (IOException ignored) {}
             return;
         }
 
+        if (message.equalsIgnoreCase("/help")) {
+            sendMessage("[Server] Commands:");
+            sendMessage("  /list            - show online users");
+            sendMessage("  /msg <user> <text> - private message");
+            sendMessage("  /quit            - disconnect");
+            return;
+        }
+
+        if (message.equalsIgnoreCase("/list")) {
+            java.util.Set<String> online = clientManager.getAllUsernames();
+            if (online.isEmpty()) {
+                sendMessage("[Server] No users online.");
+            } else {
+                sendMessage("[Server] Online (" + online.size() + "): "
+                        + String.join(", ", online));
+            }
+            return;
+        }
+
+        // ---- Message length cap ----
+        if (message.length() > MAX_MESSAGE_LENGTH) {
+            sendMessage("[Server] Message too long. Max " + MAX_MESSAGE_LENGTH + " characters.");
+            return;
+        }
+
+        // ---- Route to MessageRouter ----
         messageRouter.routeMessage(username, message);
     }
 
@@ -134,7 +169,7 @@ public class ClientHandler implements Runnable {
     }
 
     // --------------------------------------------------
-    // DISCONNECT (called only once via AtomicBoolean guard)
+    // DISCONNECT
     // --------------------------------------------------
     private void disconnect() {
         if (!disconnected.compareAndSet(false, true)) return;
@@ -143,11 +178,11 @@ public class ClientHandler implements Runnable {
             if (username != null) {
                 clientManager.removeClient(username);
                 messageRouter.broadcast("[Server] " + username + " left the chat.", username);
-                ServerLogger.log("[Server] " + username + " disconnected.");
+                ServerLogger.log("[Server] Disconnected: " + username);
             }
             socket.close();
         } catch (IOException e) {
-            ServerLogger.log("[Server] Error closing connection: " + e.getMessage());
+            ServerLogger.log("[Server] Error on disconnect: " + e.getMessage());
         }
     }
 }

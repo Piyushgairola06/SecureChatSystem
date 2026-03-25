@@ -19,9 +19,7 @@ public class MessageRouter {
     }
 
     private void sendPrivateMessage(String sender, String message) {
-        // format: /msg <username> <message text>
         String[] parts = message.split(" ", 3);
-
         ClientHandler senderHandler = clientManager.getClient(sender);
 
         if (parts.length < 3) {
@@ -30,8 +28,15 @@ public class MessageRouter {
             return;
         }
 
-        String target  = parts[1];
-        String text    = parts[2];
+        String target = parts[1];
+        String text   = parts[2];
+
+        // Can't PM yourself
+        if (target.equals(sender)) {
+            if (senderHandler != null)
+                senderHandler.sendMessage("[Server] You cannot message yourself.");
+            return;
+        }
 
         ClientHandler targetHandler = clientManager.getClient(target);
 
@@ -41,7 +46,7 @@ public class MessageRouter {
             return;
         }
 
-        String formatted = "[Private] " + sender + " -> " + target + ": " + text;
+        String formatted = "[PM] " + sender + " -> " + target + ": " + text;
 
         targetHandler.sendMessage(formatted);
         if (senderHandler != null) senderHandler.sendMessage(formatted);
@@ -49,14 +54,13 @@ public class MessageRouter {
         ServerLogger.log(formatted);
     }
 
-    // excludeUsername: the sender — they don't receive their own broadcast
+    // excludeUsername = null means send to everyone (used by shutdown hook)
     public void broadcast(String message, String excludeUsername) {
         Collection<ClientHandler> allClients = clientManager.getAllClients();
 
         for (ClientHandler client : allClients) {
-            // Skip the sender
-            if (excludeUsername != null && client == clientManager.getClient(excludeUsername))
-                continue;
+            if (excludeUsername != null
+                    && client == clientManager.getClient(excludeUsername)) continue;
             client.sendMessage(message);
         }
 

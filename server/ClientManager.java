@@ -1,11 +1,11 @@
 package server;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientManager {
 
-    // ConcurrentHashMap for thread-safe multi-client access
     private ConcurrentHashMap<String, ClientHandler> clients;
 
     public ClientManager() {
@@ -14,12 +14,14 @@ public class ClientManager {
 
     public void addClient(String username, ClientHandler handler) {
         clients.put(username, handler);
-        ServerLogger.log("[ClientManager] Added: " + username + " | Online: " + clients.size());
+        ServerLogger.log("[ClientManager] + " + username
+                + " | Online: " + clients.size());
     }
 
     public void removeClient(String username) {
         clients.remove(username);
-        ServerLogger.log("[ClientManager] Removed: " + username + " | Online: " + clients.size());
+        ServerLogger.log("[ClientManager] - " + username
+                + " | Online: " + clients.size());
     }
 
     public ClientHandler getClient(String username) {
@@ -30,7 +32,16 @@ public class ClientManager {
         return clients.values();
     }
 
+    // Returns all currently online usernames
+    public Set<String> getAllUsernames() {
+        return clients.keySet();
+    }
+
     public boolean isOnline(String username) {
         return clients.containsKey(username);
+    }
+
+    public int getClientCount() {
+        return clients.size();
     }
 }
