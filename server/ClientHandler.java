@@ -2,6 +2,7 @@ package server;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientHandler implements Runnable {
 
@@ -15,9 +16,11 @@ public class ClientHandler implements Runnable {
 
     private String username;
 
+    // Guard against double disconnect() calls
+    private final AtomicBoolean disconnected = new AtomicBoolean(false);
+
     public ClientHandler(Socket socket, ClientManager clientManager,
                          AuthManager authManager, MessageRouter messageRouter) {
-
         this.socket = socket;
         this.clientManager = clientManager;
         this.authManager = authManager;
@@ -26,69 +29,70 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-
         try {
-
-            // Setup input/output streams
             out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // Login step
-            boolean loginSuccess = handleLogin();
-
-            if (!loginSuccess) {
+            if (!handleLogin()) {
                 socket.close();
                 return;
             }
 
-            // Welcome message
-            sendMessage("[Server] Welcome " + username);
-
-            // Inform others
-            messageRouter.broadcast("[Server] " + username + " joined the chat", username);
-
-            // Add client to active list
+            // Register BEFORE broadcasting "joined" so the new user
+            // is already in the map if anyone replies immediately
             clientManager.addClient(username, this);
 
-            // Listen for client messages
+            sendMessage("[Server] Welcome, " + username + "!");
+            messageRouter.broadcast("[Server] " + username + " joined the chat.", username);
+
             String line;
-
             while ((line = in.readLine()) != null) {
-
                 String message = EncryptionUtil.decrypt(line);
-
                 processMessage(message);
             }
 
         } catch (IOException e) {
-
-            System.out.println("Connection lost with " + username);
-
+            ServerLogger.log("[Server] Connection lost: " + username);
         } finally {
-
+            // Only disconnect once — guards against /quit path + finally path
             disconnect();
         }
     }
 
-    // --------------------------------------
-    // LOGIN
-    // --------------------------------------
+    // --------------------------------------------------
+    // LOGIN / REGISTER
+    // --------------------------------------------------
     private boolean handleLogin() throws IOException {
+        out.println("LOGIN");  // server ready signal (same for both flows)
 
-        out.println("LOGIN");
-
+        String mode = in.readLine(); // "LOGIN" or "REGISTER"
         String user = in.readLine();
         String pass = in.readLine();
 
-        if (user == null || pass == null) {
+        if (mode == null || user == null || pass == null) return false;
+
+        user = user.trim();
+        pass = pass.trim();
+
+        if (user.isEmpty() || pass.isEmpty()) {
+            out.println("REJECT Username and password cannot be empty");
             return false;
         }
 
-        boolean valid = authManager.authenticate(user, pass);
-
-        if (!valid) {
-            out.println("REJECT Invalid username or password");
-            return false;
+        if ("REGISTER".equals(mode)) {
+            boolean registered = authManager.register(user, pass);
+            if (!registered) {
+                out.println("REJECT Username already taken");
+                ServerLogger.log("[Auth] Register failed (taken): " + user);
+                return false;
+            }
+            ServerLogger.log("[Auth] New user registered: " + user);
+        } else {
+            if (!authManager.authenticate(user, pass)) {
+                out.println("REJECT Invalid username or password");
+                ServerLogger.log("[Auth] Failed login: " + user);
+                return false;
+            }
         }
 
         if (clientManager.isOnline(user)) {
@@ -97,230 +101,53 @@ public class ClientHandler implements Runnable {
         }
 
         username = user;
-
         out.println("OK");
-
+        ServerLogger.log("[Auth] Login success: " + username);
         return true;
     }
 
-    // --------------------------------------
-    // PROCESS CLIENT MESSAGE
-    // --------------------------------------
+    // --------------------------------------------------
+    // PROCESS MESSAGE
+    // --------------------------------------------------
     private void processMessage(String message) {
-
-        if (message == null) {
-            return;
-        }
+        if (message == null || message.trim().isEmpty()) return;
 
         message = message.trim();
 
-        if (message.length() == 0) {
-            return;
-        }
-
-        // Quit command
-        if (message.equals("/quit")) {
-
-            disconnect();
-            return;
-        }
-
-        // Send message through router
-        messageRouter.routeMessage(username, message);
-    }
-
-    // --------------------------------------
-    // SEND MESSAGE TO CLIENT
-    // --------------------------------------
-    public void sendMessage(String message) {
-
-        String encrypted = EncryptionUtil.encrypt(message);
-
-        out.println(encrypted);
-    }
-
-    // --------------------------------------
-    // DISCONNECT
-    // --------------------------------------
-    private void disconnect() {
-
-        try {
-
-            if (username != null) {
-
-                clientManager.removeClient(username);
-
-                messageRouter.broadcast("[Server] " + username + " left the chat", username);
-            }
-
-            socket.close();
-
-        } catch (IOException e) {
-
-            System.out.println("Error closing connection");
-        }
-    }
-}
-package server;
-
-import java.io.*;
-import java.net.Socket;
-
-public class ClientHandler implements Runnable {
-
-    private Socket socket;
-    private ClientManager clientManager;
-    private AuthManager authManager;
-    private MessageRouter messageRouter;
-
-    private PrintWriter out;
-    private BufferedReader in;
-
-    private String username;
-
-    public ClientHandler(Socket socket, ClientManager clientManager,
-                         AuthManager authManager, MessageRouter messageRouter) {
-
-        this.socket = socket;
-        this.clientManager = clientManager;
-        this.authManager = authManager;
-        this.messageRouter = messageRouter;
-    }
-
-    @Override
-    public void run() {
-
-        try {
-
-            // Setup input/output streams
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-            // Login step
-            boolean loginSuccess = handleLogin();
-
-            if (!loginSuccess) {
+        if (message.equalsIgnoreCase("/quit")) {
+            // Let the finally block handle cleanup — don't call disconnect() here
+            // Just close the socket so readLine() returns null and exits the loop cleanly
+            try {
                 socket.close();
-                return;
-            }
-
-            // Welcome message
-            sendMessage("[Server] Welcome " + username);
-
-            // Inform others
-            messageRouter.broadcast("[Server] " + username + " joined the chat", username);
-
-            // Add client to active list
-            clientManager.addClient(username, this);
-
-            // Listen for client messages
-            String line;
-
-            while ((line = in.readLine()) != null) {
-
-                String message = EncryptionUtil.decrypt(line);
-
-                processMessage(message);
-            }
-
-        } catch (IOException e) {
-
-            System.out.println("Connection lost with " + username);
-
-        } finally {
-
-            disconnect();
-        }
-    }
-
-    // --------------------------------------
-    // LOGIN
-    // --------------------------------------
-    private boolean handleLogin() throws IOException {
-
-        out.println("LOGIN");
-
-        String user = in.readLine();
-        String pass = in.readLine();
-
-        if (user == null || pass == null) {
-            return false;
-        }
-
-        boolean valid = authManager.authenticate(user, pass);
-
-        if (!valid) {
-            out.println("REJECT Invalid username or password");
-            return false;
-        }
-
-        if (clientManager.isOnline(user)) {
-            out.println("REJECT User already logged in");
-            return false;
-        }
-
-        username = user;
-
-        out.println("OK");
-
-        return true;
-    }
-
-    // --------------------------------------
-    // PROCESS CLIENT MESSAGE
-    // --------------------------------------
-    private void processMessage(String message) {
-
-        if (message == null) {
+            } catch (IOException ignored) {}
             return;
         }
 
-        message = message.trim();
-
-        if (message.length() == 0) {
-            return;
-        }
-
-        // Quit command
-        if (message.equals("/quit")) {
-
-            disconnect();
-            return;
-        }
-
-        // Send message through router
         messageRouter.routeMessage(username, message);
     }
 
-    // --------------------------------------
-    // SEND MESSAGE TO CLIENT
-    // --------------------------------------
+    // --------------------------------------------------
+    // SEND MESSAGE
+    // --------------------------------------------------
     public void sendMessage(String message) {
-
-        String encrypted = EncryptionUtil.encrypt(message);
-
-        out.println(encrypted);
+        out.println(EncryptionUtil.encrypt(message));
     }
 
-    // --------------------------------------
-    // DISCONNECT
-    // --------------------------------------
+    // --------------------------------------------------
+    // DISCONNECT (called only once via AtomicBoolean guard)
+    // --------------------------------------------------
     private void disconnect() {
+        if (!disconnected.compareAndSet(false, true)) return;
 
         try {
-
             if (username != null) {
-
                 clientManager.removeClient(username);
-
-                messageRouter.broadcast("[Server] " + username + " left the chat", username);
+                messageRouter.broadcast("[Server] " + username + " left the chat.", username);
+                ServerLogger.log("[Server] " + username + " disconnected.");
             }
-
             socket.close();
-
         } catch (IOException e) {
-
-            System.out.println("Error closing connection");
+            ServerLogger.log("[Server] Error closing connection: " + e.getMessage());
         }
     }
 }

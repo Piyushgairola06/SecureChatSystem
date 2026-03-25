@@ -12,42 +12,59 @@ public class ClientMain {
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
 
+        System.out.println("=== Secure Chat ===");
+        System.out.println("1. Login");
+        System.out.println("2. Register");
+        System.out.print("Choice: ");
+        String choice = scanner.nextLine().trim();
+
+        boolean isRegister = choice.equals("2");
+
         System.out.print("Username: ");
         String username = scanner.nextLine().trim();
         System.out.print("Password: ");
         String password = scanner.nextLine().trim();
 
-        Socket socket = new Socket(HOST, PORT);
-        PrintWriter  out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        if (isRegister) {
+            System.out.print("Confirm Password: ");
+            String confirm = scanner.nextLine().trim();
+            if (!confirm.equals(password)) {
+                System.out.println("[Client] Passwords do not match.");
+                return;
+            }
+        }
 
-        // Server sends "LOGIN" first
+        Socket socket = new Socket(HOST, PORT);
+        PrintWriter    out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()), true);
+        BufferedReader in  = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+        // Wait for server ready signal
         String signal = in.readLine();
         if (!"LOGIN".equals(signal)) {
-            System.out.println("[Client] Unexpected server signal: " + signal);
+            System.out.println("[Client] Unexpected signal: " + signal);
             socket.close();
             return;
         }
 
-        // Send credentials plain (they travel before encryption is fully bootstrapped)
+        // Tell server: LOGIN or REGISTER
+        out.println(isRegister ? "REGISTER" : "LOGIN");
         out.println(username);
         out.println(password);
 
         String response = in.readLine();
         if (response == null || response.startsWith("REJECT")) {
-            System.out.println("[Client] Login failed: " + response);
+            System.out.println("[Client] " + (isRegister ? "Registration" : "Login") + " failed: " + response);
             socket.close();
             return;
         }
 
-        System.out.println("[Client] Connected. Type /quit to exit.");
+        System.out.println("[Client] " + (isRegister ? "Account created and connected!" : "Connected!"));
+        System.out.println("[Client] Commands: /msg <user> <text>  |  /quit");
 
-        // Start receiver thread
         Thread receiver = new Thread(new ClientReceiver(in));
         receiver.setDaemon(true);
         receiver.start();
 
-        // Sender runs on main thread
         new ClientSender(out, scanner).run();
 
         socket.close();

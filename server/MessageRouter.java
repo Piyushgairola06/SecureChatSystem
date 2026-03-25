@@ -10,78 +10,56 @@ public class MessageRouter {
         this.clientManager = clientManager;
     }
 
-    // --------------------------------------
-    // Route message
-    // --------------------------------------
     public void routeMessage(String sender, String message) {
-
         if (message.startsWith("/msg ")) {
-
             sendPrivateMessage(sender, message);
-
         } else {
-
-            String formatted = sender + ": " + message;
-
-            broadcast(formatted, sender);
+            broadcast(sender + ": " + message, sender);
         }
     }
 
-    // --------------------------------------
-    // Private message
-    // --------------------------------------
     private void sendPrivateMessage(String sender, String message) {
-
-        // format: /msg username message
+        // format: /msg <username> <message text>
         String[] parts = message.split(" ", 3);
 
-        if (parts.length < 3) {
-
-            ClientHandler senderHandler = clientManager.getClient(sender);
-
-            if (senderHandler != null) {
-                senderHandler.sendMessage("Usage: /msg <username> <message>");
-            }
-
-            return;
-        }
-
-        String target = parts[1];
-        String text = parts[2];
-
-        ClientHandler targetHandler = clientManager.getClient(target);
         ClientHandler senderHandler = clientManager.getClient(sender);
 
-        if (targetHandler == null) {
-
-            if (senderHandler != null) {
-                senderHandler.sendMessage("User not online: " + target);
-            }
-
+        if (parts.length < 3) {
+            if (senderHandler != null)
+                senderHandler.sendMessage("[Server] Usage: /msg <username> <message>");
             return;
         }
 
-        String finalMessage = "[Private] " + sender + " -> " + target + ": " + text;
+        String target  = parts[1];
+        String text    = parts[2];
 
-        // send to receiver
-        targetHandler.sendMessage(finalMessage);
+        ClientHandler targetHandler = clientManager.getClient(target);
 
-        // also show to sender
-        if (senderHandler != null) {
-            senderHandler.sendMessage(finalMessage);
+        if (targetHandler == null) {
+            if (senderHandler != null)
+                senderHandler.sendMessage("[Server] User not online: " + target);
+            return;
         }
+
+        String formatted = "[Private] " + sender + " -> " + target + ": " + text;
+
+        targetHandler.sendMessage(formatted);
+        if (senderHandler != null) senderHandler.sendMessage(formatted);
+
+        ServerLogger.log(formatted);
     }
 
-    // --------------------------------------
-    // Broadcast message
-    // --------------------------------------
+    // excludeUsername: the sender — they don't receive their own broadcast
     public void broadcast(String message, String excludeUsername) {
-
         Collection<ClientHandler> allClients = clientManager.getAllClients();
 
         for (ClientHandler client : allClients) {
-
+            // Skip the sender
+            if (excludeUsername != null && client == clientManager.getClient(excludeUsername))
+                continue;
             client.sendMessage(message);
         }
+
+        ServerLogger.log("[Broadcast] " + message);
     }
 }
