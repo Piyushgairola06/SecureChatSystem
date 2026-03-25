@@ -10,37 +10,24 @@ public class ServerMain {
 
     public static void main(String[] args) {
 
-        // Create required objects
-        ClientManager clientManager = new ClientManager();
-        AuthManager authManager = new AuthManager();
-        MessageRouter messageRouter = new MessageRouter(clientManager);
+        ClientManager  clientManager  = new ClientManager();
+        AuthManager    authManager    = new AuthManager();
+        MessageRouter  messageRouter  = new MessageRouter(clientManager);
 
-        System.out.println("Server started on port " + PORT);
+        ServerLogger.log("[Server] Started on port " + PORT);
 
-        try {
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
 
-            // Start server
-            ServerSocket serverSocket = new ServerSocket(PORT);
-
-            // Keep server running forever
             while (true) {
-
-                // Wait for client connection
                 Socket socket = serverSocket.accept();
+                ServerLogger.log("[Server] New connection: " + socket.getInetAddress());
 
-                System.out.println("New client connected: " + socket.getInetAddress());
-
-                // Create handler for this client
                 ClientHandler handler = new ClientHandler(socket, clientManager, authManager, messageRouter);
-
-                // Run each client in separate thread
-                Thread t = new Thread(handler);
-                t.start();
+                new Thread(handler).start();
             }
 
         } catch (IOException e) {
-
-            System.out.println("Server error: " + e.getMessage());
+            ServerLogger.log("[Server] Fatal error: " + e.getMessage());
         }
     }
 }

@@ -7,67 +7,32 @@ import java.util.Base64;
 
 public class EncryptionUtil {
 
-    // 16 character key (AES-128 requires 16 bytes)
-    private static final String KEY = "MySecureChatKey!";
+    private static final String KEY = "MySecureChatKey!";  // 16 bytes = AES-128
+    private static final String IV  = "RandomInitVector";  // 16 bytes
 
-    // 16 character IV
-    private static final String IV = "RandomInitVector";
-
-    // --------------------------------------
-    // Encrypt message
-    // --------------------------------------
     public static String encrypt(String message) {
-
         try {
-
             SecretKeySpec secretKey = new SecretKeySpec(KEY.getBytes(), "AES");
-
-            IvParameterSpec ivSpec = new IvParameterSpec(IV.getBytes());
-
+            IvParameterSpec ivSpec  = new IvParameterSpec(IV.getBytes());
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
-
-            byte[] encryptedBytes = cipher.doFinal(message.getBytes());
-
-            String encryptedText = Base64.getEncoder().encodeToString(encryptedBytes);
-
-            return encryptedText;
-
+            return Base64.getEncoder().encodeToString(cipher.doFinal(message.getBytes()));
         } catch (Exception e) {
-
-            System.out.println("Encryption error");
-
-            return message; // fallback
+            System.out.println("[Encryption] Error: " + e.getMessage());
+            return message; // fallback: send plain
         }
     }
 
-    // --------------------------------------
-    // Decrypt message
-    // --------------------------------------
     public static String decrypt(String encryptedMessage) {
-
         try {
-
             SecretKeySpec secretKey = new SecretKeySpec(KEY.getBytes(), "AES");
-
-            IvParameterSpec ivSpec = new IvParameterSpec(IV.getBytes());
-
+            IvParameterSpec ivSpec  = new IvParameterSpec(IV.getBytes());
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
-
-            byte[] decodedBytes = Base64.getDecoder().decode(encryptedMessage);
-
-            byte[] decryptedBytes = cipher.doFinal(decodedBytes);
-
-            String decryptedText = new String(decryptedBytes);
-
-            return decryptedText;
-
+            byte[] decoded = Base64.getDecoder().decode(encryptedMessage);
+            return new String(cipher.doFinal(decoded));
         } catch (Exception e) {
-
-            // if message was not encrypted (like during login)
+            // Message wasn't encrypted (e.g. plain control signals) — return as-is
             return encryptedMessage;
         }
     }

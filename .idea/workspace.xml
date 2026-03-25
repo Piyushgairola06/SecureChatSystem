@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9bc1eb63-7ac5-4e45-be5e-a68bfbc30ef0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/ClientMain.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/ClientMain.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/SecureChatSystem.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/docs/architecture.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/docs/phase-plan.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/storage/chatlog.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/SecureChatSystem/storage/users.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/AuthManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/AuthManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ClientHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/ClientHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ClientManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/ClientManager.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/EncryptionUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/EncryptionUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/MessageRouter.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/MessageRouter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ServerLogger.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/ServerLogger.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/ServerMain.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/ServerMain.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/chatlog.txt" beforeDir="false" afterPath="$PROJECT_DIR$/storage/chatlog.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/storage/users.txt" beforeDir="false" afterPath="$PROJECT_DIR$/storage/users.txt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="3BRyk33mLVLPBiujWW04HPBep4Z" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.ClientMain.executor": "Run",
+    "Application.ServerMain.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "server-core",
+    "kotlin-language-version-configured": "true",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.32098.37" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.32098.37" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9bc1eb63-7ac5-4e45-be5e-a68bfbc30ef0" name="Changes" comment="" />
+      <created>1774466320727</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774466320727</updated>
+      <workItem from="1774466323453" duration="1662000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
