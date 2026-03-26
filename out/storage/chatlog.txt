@@ -40,33 +40,3 @@
 [2026-03-26 14:50:17] [Server] Disconnected: piyush
 [2026-03-26 14:50:21] [Server] Shutting down. Notifying all clients...
 [2026-03-26 14:50:21] [Broadcast] [Server] Server is shutting down. Goodbye!
-[2026-03-26 14:56:19] [AuthManager] Loaded 4 user(s).
-[2026-03-26 14:56:19] [Server] Starting on port 5000
-[2026-03-26 14:56:19] [Server] Max clients allowed: 10
-[2026-03-26 14:56:19] [Server] Ready. Waiting for connections...
-[2026-03-26 14:56:45] [Server] New connection from: /127.0.0.1 | Active: 1/10
-[2026-03-26 14:56:45] [Auth] Logged in: piyush
-[2026-03-26 14:56:45] [ClientManager] + piyush | Online: 1
-[2026-03-26 14:56:45] [Broadcast] [Server] piyush joined the chat.
-[2026-03-26 14:57:01] [Server] New connection from: /127.0.0.1 | Active: 2/10
-[2026-03-26 14:57:01] [Auth] Logged in: ayush
-[2026-03-26 14:57:01] [ClientManager] + ayush | Online: 2
-[2026-03-26 14:57:01] [Broadcast] [Server] ayush joined the chat.
-[2026-03-26 14:57:15] [Server] New connection from: /127.0.0.1 | Active: 3/10
-[2026-03-26 14:57:15] [Auth] Registered: ajeet
-[2026-03-26 14:57:15] [Auth] Logged in: ajeet
-[2026-03-26 14:57:15] [ClientManager] + ajeet | Online: 3
-[2026-03-26 14:57:15] [Broadcast] [Server] ajeet joined the chat.
-[2026-03-26 14:57:21] [Broadcast] ajeet: hiee guys
-[2026-03-26 14:57:58] [PM] piyush -> ayush: hie bro
-[2026-03-26 14:58:21] [Broadcast] piyush: hie ajeet
-[2026-03-26 14:58:31] [Server] Connection lost: ajeet
-[2026-03-26 14:58:31] [ClientManager] - ajeet | Online: 2
-[2026-03-26 14:58:31] [Broadcast] [Server] ajeet left the chat.
-[2026-03-26 14:58:31] [Server] Disconnected: ajeet
-[2026-03-26 14:58:39] [Server] Connection lost: ayush
-[2026-03-26 14:58:39] [ClientManager] - ayush | Online: 1
-[2026-03-26 14:58:39] [Broadcast] [Server] ayush left the chat.
-[2026-03-26 14:58:39] [Server] Disconnected: ayush
-[2026-03-26 14:58:44] [Server] Shutting down. Notifying all clients...
-[2026-03-26 14:58:44] [Broadcast] [Server] Server is shutting down. Goodbye!
