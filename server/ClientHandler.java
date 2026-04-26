@@ -45,6 +45,8 @@ public class ClientHandler implements Runnable {
 
     // Guards against disconnect() being called twice (once from /quit, once from finally)
     private final AtomicBoolean disconnected = new AtomicBoolean(false);
+    private RateLimiter rateLimiter = new RateLimiter();
+private ChannelManager channelManager = new ChannelManager();
 
     public ClientHandler(Socket socket, ClientManager clientManager,
                          AuthManager authManager, MessageRouter messageRouter) {
@@ -177,6 +179,26 @@ public class ClientHandler implements Runnable {
     private void processMessage(String message) {
         if (message == null || message.trim().isEmpty()) return;
         message = message.trim();
+        // Rate Limiting (ADD HERE)
+if (!rateLimiter.allowMessage(username)) {
+    sendMessage("[Server] You're sending messages too fast!");
+    return;
+}
+        // JOIN CHANNEL (ADD HERE)
+if (message.startsWith("/join ")) {
+    String channel = message.split(" ")[1];
+    channelManager.joinChannel(username, channel);
+    sendMessage("[Server] Joined channel: " + channel);
+    return;
+}
+
+// LEAVE CHANNEL (ADD HERE)
+if (message.startsWith("/leave ")) {
+    String channel = message.split(" ")[1];
+    channelManager.leaveChannel(username, channel);
+    sendMessage("[Server] Left channel: " + channel);
+    return;
+}
 
         // /quit — close socket and let finally handle cleanup
         // We deliberately do NOT call disconnect() here to avoid double-disconnect.
@@ -215,7 +237,21 @@ public class ClientHandler implements Runnable {
         }
 
         // Pass to MessageRouter — it decides broadcast vs private message
-        messageRouter.routeMessage(username, message);
+       // CHANNEL MESSAGE SUPPORT (ADD HERE)
+if (message.startsWith("#")) {
+    String[] parts = message.split(" ", 2);
+    String channel = parts[0];
+    String msg = parts.length > 1 ? parts[1] : "";
+
+    for (String user : channelManager.getUsers(channel)) {
+        ClientHandler client = clientManager.getClient(user);
+        if (client != null) {
+            client.sendMessage("[Channel " + channel + "] " + username + ": " + msg);
+        }
+    }
+} else {
+    messageRouter.routeMessage(username, message);
+}
     }
 
     // --------------------------------------------------
