@@ -120,12 +120,3 @@
 [2026-05-27 11:53:21] [Server] Features: AES-128, SHA-256, Channels, Rate-Limit
 [2026-05-27 11:53:21] [Server] ═══════════════════════════════════
 [2026-05-27 11:53:21] [Server] Ready. Waiting for connections...
-[2026-05-27 11:53:43] [Server] Incoming connection: /127.0.0.1
-[2026-05-27 11:53:49] [Server] Incoming connection: /127.0.0.1
-[2026-05-27 11:53:53] [Server] Incoming connection: /127.0.0.1
-[2026-05-27 11:53:53] [AuthManager] Registered new user: piyushh
-[2026-05-27 11:53:53] [ClientManager] + piyushh | online: 1
-[2026-05-27 11:53:53] [Login] piyushh from /127.0.0.1
-[2026-05-27 11:54:03] [Broadcast] piyushh: hiii
-[2026-05-27 11:54:25] [ClientManager] - piyushh | online: 0
-[2026-05-27 11:54:25] [Disconnect] piyushh
