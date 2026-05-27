@@ -1,28 +1,23 @@
 package client;
 
 import server.EncryptionUtil;
+
 import java.io.PrintWriter;
-import java.util.Scanner;
 
-public class ClientSender implements Runnable {
+/**
+ * Sends an encrypted message to the server.
+ * Stateless utility – called from the UI thread (EDT-safe).
+ */
+public class ClientSender {
 
-    private final PrintWriter out;
-    private final Scanner scanner;
+    private final PrintWriter writer;
 
-    public ClientSender(PrintWriter out, Scanner scanner) {
-        this.out     = out;
-        this.scanner = scanner;
+    public ClientSender(PrintWriter writer) {
+        this.writer = writer;
     }
 
-    @Override
-    public void run() {
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine().trim();
-            if (line.isEmpty()) continue;
-
-            out.println(EncryptionUtil.encrypt(line));
-
-            if (line.equalsIgnoreCase("/quit")) break;
-        }
+    /** Encrypt and send one message line. */
+    public void send(String message) {
+        writer.println(EncryptionUtil.encrypt(message));
     }
 }
