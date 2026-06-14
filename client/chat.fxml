@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml">
+    <TextArea fx:id="chatArea" editable="false"/>
+    <TextField fx:id="messageField"/>
+    <Button text="Send"/>
+</VBox>
