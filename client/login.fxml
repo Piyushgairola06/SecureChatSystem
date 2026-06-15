@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<VBox spacing="10" alignment="CENTER" xmlns:fx="http://javafx.com/fxml">
+    <TextField fx:id="username" promptText="Username"/>
+    <PasswordField fx:id="password" promptText="Password"/>
+    <Button text="Login"/>
+</VBox>
